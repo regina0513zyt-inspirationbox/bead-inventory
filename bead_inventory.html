@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>拼豆库存统计器</title>
+  <style>
+    :root {
+      --bg: #f5f3ef;
+      --card: #ffffff;
+      --text: #222222;
+      --muted: #7a7a7a;
+      --line: #e8e3dc;
+      --pill: #f1eeea;
+      --dark: #1f1f1f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .hero, .panel, .owned-panel, .card {
+      background: var(--card);
+      border-radius: 24px;
+      box-shadow: 0 6px 22px rgba(0,0,0,0.05);
+    }
+    .hero {
+      padding: 24px;
+      margin-bottom: 18px;
+    }
+    .badge {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--pill);
+      color: #666;
+      font-size: 14px;
+    }
+    h1 {
+      margin: 14px 0 8px;
+      font-size: 34px;
+      line-height: 1.15;
+    }
+    .sub {
+      color: var(--muted);
+      margin-bottom: 18px;
+      line-height: 1.6;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .stat {
+      background: var(--pill);
+      border-radius: 18px;
+      padding: 14px 16px;
+    }
+    .stat .label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .stat .value {
+      margin-top: 6px;
+      font-size: 30px;
+      font-weight: 700;
+    }
+    .top-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .panel, .owned-panel {
+      padding: 16px;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1.6fr;
+      gap: 12px;
+    }
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+      font-size: 15px;
+      outline: none;
+      background: #fff;
+    }
+    input:focus, select:focus { border-color: #b9b1a5; }
+    button, .file-label {
+      border: none;
+      border-radius: 16px;
+      padding: 14px 16px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+    button:hover, .file-label:hover { transform: translateY(-1px); }
+    .btn-dark { background: var(--dark); color: white; }
+    .btn-line { background: white; border: 1px solid var(--line); color: #333; }
+    .button-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .owned-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .owned-list {
+      max-height: 265px;
+      overflow: auto;
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .owned-empty {
+      background: #faf8f5;
+      color: var(--muted);
+      padding: 14px;
+      border-radius: 18px;
+      line-height: 1.6;
+    }
+    .owned-item {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .owned-left {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      min-width: 0;
+    }
+    .dot {
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      border: 1px solid rgba(0,0,0,0.06);
+      flex: none;
+    }
+    .mini { color: var(--muted); font-size: 12px; }
+    .qty-pill {
+      background: var(--pill);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 700;
+      flex: none;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .card { overflow: hidden; }
+    .card-inner { padding: 14px; }
+    .swatch {
+      height: 118px;
+      border-radius: 18px;
+      padding: 12px;
+      display: flex;
+      align-items: flex-end;
+      margin-bottom: 14px;
+    }
+    .code-pill {
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      backdrop-filter: blur(4px);
+    }
+    .item-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .item-code {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .item-color {
+      color: #9b9389;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+    .item-qty {
+      background: var(--pill);
+      border-radius: 16px;
+      padding: 10px 14px;
+      min-width: 72px;
+      text-align: center;
+      align-self: flex-start;
+    }
+    .item-qty .q1 { color: var(--muted); font-size: 12px; }
+    .item-qty .q2 { font-size: 24px; font-weight: 800; }
+    .set-box {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .set-title {
+      color: #666;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .set-row, .act-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+    .act-row { grid-template-columns: 1fr 1fr; }
+    .muted-note {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+    .footer-note {
+      color: #8b8379;
+      font-size: 13px;
+      text-align: center;
+      margin-top: 20px;
+    }
+    #importFile { display: none; }
+    @media (max-width: 1100px) {
+      .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .controls { grid-template-columns: 1fr 1fr; }
+      .top-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      .wrap { padding: 14px; }
+      h1 { font-size: 28px; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cards { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: 1fr; }
+      .owned-list { grid-template-columns: 1fr; }
+      .button-row { grid-template-columns: 1fr; }
+      .act-row, .set-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="badge">🧩 拼豆库存统计器</div>
+      <h1>色号 + 颜色 + 数量，一页就能看清</h1>
+      <div class="sub">按你给的 A / B / C / D / E / F / G / H / M 九组生成。支持直接输入数量、加减微调、只看我的色号、自动本地保存，还能导入导出。</div>
+      <div class="stats">
+        <div class="stat"><div class="label">全部色号</div><div class="value" id="statTotalCodes">0</div></div>
+        <div class="stat"><div class="label">已有色号</div><div class="value" id="statOwnedCodes">0</div></div>
+        <div class="stat"><div class="label">总数量</div><div class="value" id="statTotalQty">0</div></div>
+        <div class="stat"><div class="label">当前筛选</div><div class="value" id="statFiltered">0</div></div>
+      </div>
+    </section>
+
+    <section class="top-grid">
+      <div class="panel">
+        <div class="controls">
+          <input id="searchInput" type="text" placeholder="搜索色号，例如 A1 / B23 / H7" />
+          <select id="familySelect"></select>
+          <button id="onlyOwnedBtn" class="btn-line">只看我的色号：关</button>
+          <div class="button-row">
+            <button id="resetBtn" class="btn-line">清空</button>
+            <button id="exportBtn" class="btn-line">导出</button>
+            <label class="file-label btn-line" for="importFile">导入</label>
+            <input id="importFile" type="file" accept="application/json" />
+          </div>
+        </div>
+        <div class="muted-note">使用方法：直接在卡片里输入数量点“确定”，或者用“添加 / 减少”微调。数据会自动保存在这台设备的浏览器里。</div>
+      </div>
+
+      <div class="owned-panel">
+        <div class="owned-title">我的色号</div>
+        <div id="ownedList"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="cards" id="cards"></div>
+    </section>
+
+    <div class="footer-note">这个网页是单文件版本，双击即可打开。后续你想要我再给你加“批量录入”“低库存提醒”“更接近参考图的精确配色”也可以。</div>
+  </div>
+
+  <script>
+    function seeded(index) {
+      const x = Math.sin(index * 999 + 7) * 10000;
+      return x - Math.floor(x);
+    }
+    function hslToHex(h, s, l) {
+      s /= 100;
+      l /= 100;
+      const k = (n) => (n + h / 30) % 12;
+      const a = s * Math.min(l, 1 - l);
+      const f = (n) => {
+        const color = l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+        return Math.round(255 * color).toString(16).padStart(2, "0");
+      };
+      return `#${f(0)}${f(8)}${f(4)}`;
+    }
+    function buildGroup(letter, count, generator) {
+      return Array.from({ length: count }, (_, i) => {
+        const n = i + 1;
+        return { code: `${letter}${n}`, ...generator(n, i, count), qty: 0 };
+      });
+    }
+    const generators = {
+      A: (n, i, total) => {
+        const t = i / Math.max(total - 1, 1);
+        const hue = 15 + 45 * (0.5 + 0.5 * Math.sin(i * 0.65 + 1.2));
+        const sat = 75 + Math.round(seeded(n) * 12);
+        const light = 88 - Math.round(t * 26) + Math.round(seeded(n + 11) * 8);
+        return { color: hslToHex(hue, sat, Math.max(52, Math.min(90, light))), family: "A 组·黄橙" };
+      },
+      B: (n, i, total) => {
+        const hue = 65 + (i * 13) % 110;
+        const sat = 58 + Math.round(seeded(n + 30) * 22);
+        const light = 78 - Math.round((i / total) * 34) + Math.round(seeded(n + 8) * 14);
+        return { color: hslToHex(hue, sat, Math.max(22, Math.min(84, light))), family: "B 组·绿色" };
+      },
+      C: (n, i, total) => {
+        const hue = 178 + (i * 7) % 55;
+        const sat = 58 + Math.round(seeded(n + 60) * 24);
+        const light = 82 - Math.round((i / total) * 30) + Math.round(seeded(n + 5) * 12);
+        return { color: hslToHex(hue, sat, Math.max(24, Math.min(85, light))), family: "C 组·蓝青" };
+      },
+      D: (n, i, total) => {
+        const hue = 228 + (i * 9) % 80;
+        const sat = 48 + Math.round(seeded(n + 90) * 28);
+        const light = 82 - Math.round((i / total) * 34) + Math.round(seeded(n + 19) * 12);
+        return { color: hslToHex(hue, sat, Math.max(22, Math.min(84, light))), family: "D 组·紫蓝" };
+      },
+      E: (n, i, total) => {
+        const hue = 312 + (i * 6) % 35;
+        const sat = 35 + Math.round(seeded(n + 120) * 35);
+        const light = 88 - Math.round((i / total) * 32) + Math.round(seeded(n + 4) * 8);
+        return { color: hslToHex(hue, sat, Math.max(38, Math.min(90, light))), family: "E 组·粉紫" };
+      },
+      F: (n, i, total) => {
+        const hue = (350 + (i * 5) % 40) % 360;
+        const sat = 60 + Math.round(seeded(n + 140) * 26);
+        const light = 82 - Math.round((i / total) * 38) + Math.round(seeded(n + 15) * 10);
+        return { color: hslToHex(hue, sat, Math.max(22, Math.min(86, light))), family: "F 组·红橙" };
+      },
+      G: (n, i, total) => {
+        const hue = 20 + (i * 3) % 35;
+        const sat = 35 + Math.round(seeded(n + 170) * 35);
+        const light = 86 - Math.round((i / total) * 42) + Math.round(seeded(n + 22) * 10);
+        return { color: hslToHex(hue, sat, Math.max(28, Math.min(88, light))), family: "G 组·棕黄" };
+      },
+      H: (n, i, total) => {
+        const light = 96 - Math.round((i / total) * 78) + Math.round(seeded(n + 190) * 18) - 6;
+        const sat = Math.round(seeded(n + 8) * 8);
+        return { color: hslToHex(210, sat, Math.max(4, Math.min(96, light))), family: "H 组·灰黑" };
+      },
+      M: (n, i, total) => {
+        const hue = 10 + (i * 17) % 120;
+        const sat = 10 + Math.round(seeded(n + 220) * 18);
+        const light = 84 - Math.round((i / total) * 22) + Math.round(seeded(n + 35) * 12);
+        return { color: hslToHex(hue, sat, Math.max(36, Math.min(90, light))), family: "M 组·莫兰迪" };
+      }
+    };
+
+    const initialPalette = [
+      ...buildGroup("A", 26, generators.A),
+      ...buildGroup("B", 32, generators.B),
+      ...buildGroup("C", 29, generators.C),
+      ...buildGroup("D", 26, generators.D),
+      ...buildGroup("E", 24, generators.E),
+      ...buildGroup("F", 25, generators.F),
+      ...buildGroup("G", 21, generators.G),
+      ...buildGroup("H", 23, generators.H),
+      ...buildGroup("M", 15, generators.M)
+    ];
+
+    function isDark(hex) {
+      const c = hex.replace("#", "");
+      const r = parseInt(c.slice(0, 2), 16);
+      const g = parseInt(c.slice(2, 4), 16);
+      const b = parseInt(c.slice(4, 6), 16);
+      const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+      return yiq < 150;
+    }
+
+    const STORAGE_KEY = "bead-inventory-v1";
+    let items = loadItems();
+    let keyword = "";
+    let onlyOwned = false;
+    let family = "全部";
+
+    const els = {
+      cards: document.getElementById("cards"),
+      ownedList: document.getElementById("ownedList"),
+      searchInput: document.getElementById("searchInput"),
+      familySelect: document.getElementById("familySelect"),
+      onlyOwnedBtn: document.getElementById("onlyOwnedBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      exportBtn: document.getElementById("exportBtn"),
+      importFile: document.getElementById("importFile"),
+      statTotalCodes: document.getElementById("statTotalCodes"),
+      statOwnedCodes: document.getElementById("statOwnedCodes"),
+      statTotalQty: document.getElementById("statTotalQty"),
+      statFiltered: document.getElementById("statFiltered")
+    };
+
+    function loadItems() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        const qtyMap = new Map(saved.map((x) => [x.code, Number(x.qty) || 0]));
+        return initialPalette.map((item) => ({ ...item, qty: qtyMap.get(item.code) ?? 0 }));
+      } catch {
+        return initialPalette.map((item) => ({ ...item }));
+      }
+    }
+    function saveItems() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items.map(({ code, qty }) => ({ code, qty }))));
+    }
+    function getFamilies() {
+      return ["全部", ...new Set(items.map((item) => item.family))];
+    }
+    function getFiltered() {
+      return items.filter((item) => {
+        const hitKeyword = !keyword || item.code.toLowerCase().includes(keyword.toLowerCase());
+        const hitOwned = !onlyOwned || item.qty > 0;
+        const hitFamily = family === "全部" || item.family === family;
+        return hitKeyword && hitOwned && hitFamily;
+      });
+    }
+    function getOwned() {
+      return [...items].filter((i) => i.qty > 0).sort((a, b) => b.qty - a.qty);
+    }
+    function setQty(code, value) {
+      const safe = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+      items = items.map((item) => item.code === code ? { ...item, qty: safe } : item);
+      saveItems();
+      render();
+    }
+    function changeQty(code, delta) {
+      items = items.map((item) => item.code === code ? { ...item, qty: Math.max(0, item.qty + delta) } : item);
+      saveItems();
+      render();
+    }
+    function resetAll() {
+      if (!confirm("确定清空全部数量吗？")) return;
+      items = items.map((item) => ({ ...item, qty: 0 }));
+      saveItems();
+      render();
+    }
+    function exportData() {
+      const blob = new Blob([JSON.stringify(items.map(({ code, qty }) => ({ code, qty })), null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "拼豆库存.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    function importData(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(String(reader.result || "[]"));
+          const qtyMap = new Map(parsed.map((x) => [x.code, Number(x.qty) || 0]));
+          items = initialPalette.map((item) => ({ ...item, qty: qtyMap.get(item.code) ?? 0 }));
+          saveItems();
+          render();
+        } catch {
+          alert("导入失败，请检查 JSON 文件格式");
+        }
+      };
+      reader.readAsText(file, "utf-8");
+    }
+
+    function renderFamilies() {
+      const options = getFamilies().map((f) => `<option value="${f}">${f}</option>`).join("");
+      els.familySelect.innerHTML = options;
+      els.familySelect.value = family;
+    }
+
+    function renderOwned(owned) {
+      if (!owned.length) {
+        els.ownedList.innerHTML = '<div class="owned-empty">你还没录入数量，可以直接在下方卡片里输入数字后点“确定”，也可以用添加 / 减少微调。</div>';
+        return;
+      }
+      els.ownedList.innerHTML = `<div class="owned-list">${owned.map((item) => `
+        <div class="owned-item">
+          <div class="owned-left">
+            <div class="dot" style="background:${item.color}"></div>
+            <div>
+              <div><strong>${item.code}</strong></div>
+              <div class="mini">${item.family}</div>
+            </div>
+          </div>
+          <div class="qty-pill">${item.qty}</div>
+        </div>
+      `).join("")}</div>`;
+    }
+
+    function renderCards(filtered) {
+      els.cards.innerHTML = filtered.map((item) => {
+        const dark = isDark(item.color);
+        const textColor = dark ? 'white' : '#111827';
+        const bgColor = dark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.72)';
+        return `
+          <article class="card">
+            <div class="card-inner">
+              <div class="swatch" style="background:${item.color}">
+                <div class="code-pill" style="color:${textColor};background:${bgColor}">${item.code}</div>
+              </div>
+              <div class="item-head">
+                <div>
+                  <div class="item-code">${item.code}</div>
+                  <div class="mini">${item.family}</div>
+                  <div class="item-color">颜色值 ${item.color}</div>
+                </div>
+                <div class="item-qty">
+                  <div class="q1">数量</div>
+                  <div class="q2">${item.qty}</div>
+                </div>
+              </div>
+              <div class="set-box">
+                <div class="set-title">直接输入数量</div>
+                <div class="set-row">
+                  <input type="number" min="0" step="1" value="${item.qty}" data-code="${item.code}" class="qty-input" placeholder="输入数量" />
+                  <button class="btn-dark apply-btn" data-code="${item.code}">确定</button>
+                </div>
+              </div>
+              <div class="act-row">
+                <button class="btn-line minus-btn" data-code="${item.code}">减少</button>
+                <button class="btn-dark plus-btn" data-code="${item.code}">添加</button>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join("");
+
+      els.cards.querySelectorAll('.apply-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const code = btn.dataset.code;
+          const input = els.cards.querySelector(`.qty-input[data-code="${code}"]`);
+          setQty(code, Number(input.value));
+        });
+      });
+      els.cards.querySelectorAll('.qty-input').forEach((input) => {
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') setQty(input.dataset.code, Number(input.value));
+        });
+        input.addEventListener('blur', () => {
+          setQty(input.dataset.code, Number(input.value));
+        });
+      });
+      els.cards.querySelectorAll('.minus-btn').forEach((btn) => btn.addEventListener('click', () => changeQty(btn.dataset.code, -1)));
+      els.cards.querySelectorAll('.plus-btn').forEach((btn) => btn.addEventListener('click', () => changeQty(btn.dataset.code, 1)));
+    }
+
+    function renderStats(filtered, owned) {
+      els.statTotalCodes.textContent = items.length;
+      els.statOwnedCodes.textContent = owned.length;
+      els.statTotalQty.textContent = items.reduce((sum, item) => sum + item.qty, 0);
+      els.statFiltered.textContent = filtered.length;
+      els.onlyOwnedBtn.textContent = `只看我的色号：${onlyOwned ? '开' : '关'}`;
+      els.onlyOwnedBtn.className = onlyOwned ? 'btn-dark' : 'btn-line';
+    }
+
+    function render() {
+      renderFamilies();
+      const filtered = getFiltered();
+      const owned = getOwned();
+      renderStats(filtered, owned);
+      renderOwned(owned);
+      renderCards(filtered);
+    }
+
+    els.searchInput.addEventListener('input', (e) => {
+      keyword = e.target.value.trim();
+      render();
+    });
+    els.familySelect.addEventListener('change', (e) => {
+      family = e.target.value;
+      render();
+    });
+    els.onlyOwnedBtn.addEventListener('click', () => {
+      onlyOwned = !onlyOwned;
+      render();
+    });
+    els.resetBtn.addEventListener('click', resetAll);
+    els.exportBtn.addEventListener('click', exportData);
+    els.importFile.addEventListener('change', (e) => importData(e.target.files[0]));
+
+    render();
+  </script>
+</body>
+</html>
